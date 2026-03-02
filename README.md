@@ -2,17 +2,16 @@
 
 A collection of resources for working with Framer.
 
-## Contents
+## [Skills](skills/)
 
-### [skills/](skills/)
-
-Claude Code skills that teach Claude how to build Framer components. Install these to get better AI assistance when working on Framer projects.
+Claude Code skills that teach Claude how to build Framer components and plugins. See [skills/README.md](skills/README.md) for installation instructions and detailed coverage.
 
 | Skill | Description |
 |-------|-------------|
 | [framer-code-components-overrides](skills/framer-code-components-overrides/) | Code Components, Code Overrides, property controls, WebGL shaders, and common patterns |
+| [framer-plugins](skills/framer-plugins/) | Framer Plugin SDK — ManagedCollection API, CMS sync, plugin modes, UI patterns, permissions |
 
-### [hacks/](hacks/)
+## [Hacks](hacks/)
 
 Workarounds and tricks for Framer.
 
