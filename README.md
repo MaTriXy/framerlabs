@@ -27,6 +27,8 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
+**2026-03-02** — Added framer-plugins skill (Plugin SDK, ManagedCollection API, CMS sync). Restructured repo.
+
 **2026-02-10** — Added React Portal pattern for z-index stacking context, loading states with scroll lock, and easing curves for lerp animations with initial distance tracking.
 
 **2026-02-02** — Added advanced gotchas: startTransition requirement, ResponsiveImage/File defaultValue workaround, variant-to-font-weight mapping, and more property control tips.
