@@ -27,6 +27,8 @@ Workarounds and tricks for Framer.
 
 ## Changelog
 
+**2026-03-11** — Added HLS video streaming pattern (dynamic HLS.js import with silent fallback, SSR guard, adaptive bitrate). New pitfall entry for pixelated .m3u8 streams in Chrome.
+
 **2026-03-02** — Added framer-plugins skill (Plugin SDK, ManagedCollection API, CMS sync). Restructured repo.
 
 **2026-02-10** — Added React Portal pattern for z-index stacking context, loading states with scroll lock, and easing curves for lerp animations with initial distance tracking.
