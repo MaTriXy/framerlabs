@@ -35,35 +35,79 @@ createRoot(root).render(<App collection={collection} />)
 
 ## Sync Algorithm (Universal)
 
-All official CMS plugins use the "unsynced items" pattern for full-replace sync:
+All official CMS plugins use the "unsynced items" pattern for smart sync. Only remove items that are no longer in the source — never remove-all + re-add:
 
 ```typescript
 async function syncCollection(collection: ManagedCollection, items: ItemData[]) {
-    const unsyncedItems = new Set(await collection.getItemIds())
+    const existingIds = new Set(await collection.getItemIds())
+    const incomingIds = new Set(items.map(i => i.id))
 
-    const collectionItems = items.map(item => {
-        unsyncedItems.delete(item.id)  // Mark as still present
-        return {
-            id: item.id,
-            slug: slugify(item.title),
-            draft: false,
-            fieldData: {
-                title: { type: "string", value: item.title },
-                // ... more fields
-            },
-        }
-    })
+    const collectionItems = items.map(item => ({
+        id: item.id,
+        slug: generateSlug(item.title, item.id),
+        draft: false,
+        fieldData: {
+            title: { type: "string", value: item.title },
+            // ... more fields (only sync-managed fields — omit user-editable fields)
+        },
+    }))
 
-    await collection.setFields(fields)
-    await collection.removeItems(Array.from(unsyncedItems))  // Remove stale items
-    await collection.addItems(collectionItems)                // Upsert current items
-    await collection.setPluginData("sourceId", sourceId)
+    // Items in collection but not in source = stale, remove them
+    const staleIds = [...existingIds].filter(id => !incomingIds.has(id))
+
+    await collection.setFields(allFields)          // Includes both sync + user-editable fields
+    if (staleIds.length > 0) {
+        await collection.removeItems(staleIds)     // Remove only stale items
+    }
+    await collection.addItems(collectionItems)     // Upsert current items
 }
 ```
 
-**Order**: `setFields` → `removeItems` (stale) → `addItems` (all current)
+**Order**: `setFields` → `removeItems` (stale only) → `addItems` (all current)
 
-Since `addItems` is upsert, unchanged items just get updated in place.
+Since `addItems` is upsert, existing items get their sync-managed fields updated while user-editable fields (not included in `fieldData`) are preserved.
+
+**Important**: Never do `removeItems(allIds)` + `addItems(allItems)` — this destroys user-editable field data. Always compute the diff and only remove items that are truly gone from the source.
+
+---
+
+## User-Editable Fields Pattern
+
+Managed collections can have fields that users edit manually in the CMS UI alongside plugin-synced fields. Set `userEditable: true` on the field definition and **never include that field in `fieldData`** during sync.
+
+```typescript
+// Separate sync-managed fields from user-editable fields
+const SYNC_FIELDS: ManagedCollectionFieldInput[] = [
+    { id: "title", name: "Title", type: "string" },
+    { id: "thumbnail", name: "Thumbnail", type: "image" },
+]
+
+const USER_FIELDS: ManagedCollectionFieldInput[] = [
+    { id: "hidden", name: "Hidden", type: "boolean", userEditable: true },
+    { id: "featured", name: "Featured", type: "boolean", userEditable: true },
+]
+
+// User-editable fields first so they appear near the Slug column in CMS UI
+const ALL_FIELDS = [...USER_FIELDS, ...SYNC_FIELDS]
+
+// In mapItems: only produce fieldData for SYNC_FIELDS — never include USER_FIELDS
+function mapItems(items: SourceItem[]): ManagedCollectionItemInput[] {
+    return items.map(item => ({
+        id: item.id,
+        slug: generateSlug(item.title, item.id),
+        draft: false,
+        fieldData: {
+            title: { type: "string", value: item.title },
+            thumbnail: { type: "image", value: item.thumbUrl },
+            // DO NOT include "hidden" or "featured" — they're user-editable
+        },
+    }))
+}
+```
+
+**Key insight**: When `addItems()` upserts an existing item, fields NOT included in `fieldData` are left untouched. This is how user-editable field values survive syncs.
+
+**Field ordering**: Place `USER_FIELDS` before `SYNC_FIELDS` in `ALL_FIELDS` so user-editable columns appear right after the Slug column in Framer's CMS UI, making them easy to find and edit.
 
 ---
 
@@ -105,7 +149,25 @@ function slugify(value: string): string {
 }
 ```
 
-**Slugs must be unique** within a collection. The Airtable plugin validates this:
+**Slugs must be unique** within a collection and **max 64 characters**. When titles may collide, append a unique suffix (e.g., a source ID):
+
+```typescript
+const SLUG_MAX = 64
+const SUFFIX_LEN = 12  // "-" + 11-char ID
+
+function generateSlug(title: string, id: string): string {
+    const slug = title
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")   // strip diacritics
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+    const trimmed = slug.slice(0, SLUG_MAX - SUFFIX_LEN).replace(/-$/, "")
+    return `${trimmed}-${id}`
+}
+```
+
+The Airtable plugin validates uniqueness:
 
 ```typescript
 const seenSlugs = new Set<string>()

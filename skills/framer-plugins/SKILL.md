@@ -4,9 +4,8 @@ description: >
   Framer Plugin SDK expert. Use when building, debugging, or modifying
   Framer plugins. Covers ManagedCollection API, CMS sync, plugin modes,
   UI patterns, permissions, data storage, and common pitfalls.
-user-invokable: true
+user-invocable: true
 license: MIT
-allowed-tools: Read, Grep, Glob, WebFetch, WebSearch
 metadata:
   author: fredm00n
   version: 1.0.0
@@ -145,7 +144,7 @@ interface ManagedCollectionFieldInput {
 ```typescript
 interface ManagedCollectionItemInput {
     id: string
-    slug: string
+    slug: string       // Must be unique, max 64 characters
     draft: boolean
     fieldData: Record<string, FieldDataEntryInput>
 }
@@ -221,10 +220,12 @@ For deeper information, see the companion files in this skill directory:
 - **[api-reference.md](references/api-reference.md)** — Complete API signatures and type definitions
 - **[patterns.md](references/patterns.md)** — Common plugin patterns extracted from 32 official examples
 - **[pitfalls.md](references/pitfalls.md)** — Known gotchas, workarounds, and debugging tips
+- **[marketplace.md](references/marketplace.md)** — Marketplace submission workflow, listing requirements, review process, plugin policies, and post-publication obligations
 
 ## Key Rules
 
 1. Always check the project's `CLAUDE.md` for project-specific overrides and decisions
+16. **Before building any new feature**, check [marketplace.md](references/marketplace.md) — the plugin must comply with Framer's policies (English UI, light+dark mode, no ads, USD-only pricing, IP ownership, etc.) or it will be rejected during the ~3-week review process
 2. CMS plugins should attempt silent sync in `syncManagedCollection` mode before showing UI
 3. `addItems()` is upsert — no need to check for existing items before adding
 4. Field data values MUST include explicit `type` property: `{ type: "string", value: "..." }`
@@ -234,3 +235,8 @@ For deeper information, see the companion files in this skill directory:
 8. Handle `FramerPluginClosedError` in catch blocks — ignore it silently
 9. Call `showUI` in `useLayoutEffect` to avoid flicker when resizing
 10. Always check permissions with `framer.isAllowedTo()` before sync operations
+11. Slugs must be unique and max 64 characters — append a unique ID suffix to title-based slugs
+12. Use `userEditable: true` on field definitions for fields users edit manually in the CMS
+13. Never include user-editable fields in `fieldData` during upsert — omitting them preserves user values
+14. Never remove-all + re-add during sync — only remove items no longer in the source to preserve user data
+15. `ManagedCollection` has no `getItems()` — you can only read item IDs, not field data

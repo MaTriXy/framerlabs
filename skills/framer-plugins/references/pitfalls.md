@@ -27,6 +27,15 @@ useLayoutEffect(() => {
 ### SVG icon centering
 Icons in `framer.json` must use a 30×30 viewBox. Paths drawn at absolute coordinates can end up outside the visible area. Use `<g transform="translate(15 15)">` with centered path coordinates.
 
+### `display:none` retriggers CSS `@keyframes` animations
+When a hidden element (e.g., a tab toggled via `display:none`) becomes visible again, browsers replay all CSS `@keyframes` animations on it. This causes completion icons, fade-ins, and other one-shot animations to replay every time the user switches tabs.
+
+**Fix**: For one-shot animations on elements inside tabs that toggle via `display:none`, either:
+1. Use React state + `useRef` to apply the `animate` class only once, then remove it after the animation completes
+2. For static informational states (like a "connected" confirmation), skip animations entirely — use a dedicated static class with no `@keyframes`
+
+Option 2 is simpler and more reliable. Only use animated classes on transient states (like sync completion) where the animation is triggered by a specific event.
+
 ---
 
 ## SDK Behavior
@@ -34,12 +43,28 @@ Icons in `framer.json` must use a 30×30 viewBox. Paths drawn at absolute coordi
 ### "Invoking protected message type" toast warnings
 `setPluginData()`, `addManagedCollectionItems()`, `setManagedCollectionFields()`, and other SDK methods trigger visible toast notifications saying "Invoking protected message type ... without checking permissions first."
 
-**What it is**: A Framer SDK internal message-passing warning surfaced as a user-facing toast. NOT just a console warning — users see it.
+**What it is**: NOT a bug — it's the Framer permission system telling you to check permissions before calling protected methods. The toast appears when you invoke a protected method without first calling `framer.isAllowedTo()`.
 
-**Workarounds:**
-- For settings: use `localStorage` instead of `setPluginData()` to eliminate the toast entirely
-- For collection operations (`addItems`, `setFields`): unavoidable — these are core sync APIs. Likely a Framer SDK bug that will be fixed.
-- `console.warn` overrides do NOT suppress these toasts (they come from the SDK's internal layer, not `console`)
+**Fix**: Always call `framer.isAllowedTo()` before any protected method. This is a synchronous call (returns `boolean`, not a Promise):
+
+```typescript
+// Check before writing to collection pluginData
+if (framer.isAllowedTo("ManagedCollection.setPluginData")) {
+    await collection.setPluginData("my-key", "my-value")
+}
+
+// Check before sync operations
+const canSync = framer.isAllowedTo(
+    "ManagedCollection.setFields",
+    "ManagedCollection.addItems",
+    "ManagedCollection.removeItems",
+    "ManagedCollection.setPluginData"
+)
+```
+
+**Important**: `framer.isAllowedTo()` returns a plain `boolean`, not a `Promise`. Do NOT `await` it.
+
+Source: Framer team confirmed this in community forums — see https://www.framer.com/developers/plugins-permissions
 
 ### closePlugin throws internally
 `framer.closePlugin()` returns `never` and throws `FramerPluginClosedError`. Any code after it won't execute. The SDK auto-suppresses unhandled rejections of this class, but if you have a `catch` block:
@@ -59,6 +84,12 @@ try {
 
 ### Slug uniqueness is required
 Items in a collection must have unique slugs. If two items share a slug, the sync may fail or produce unexpected results. Always validate before calling `addItems`.
+
+### Slug length limit is 64 characters
+Framer CMS collection item slugs have a maximum length of 64 characters. Longer slugs will be silently truncated or cause errors. When generating slugs from titles, always truncate the title portion to leave room for a unique suffix (e.g., an ID) to ensure both uniqueness and the 64-char limit.
+
+### ManagedCollection has no getItems() method
+Unlike the regular `Collection` class, `ManagedCollection` only provides `getItemIds()` — you can **only read item IDs, not field data**. This means you cannot read existing field values to compare or merge during sync. Design your sync logic around this constraint.
 
 ---
 
@@ -125,8 +156,8 @@ fieldData: { title: "Hello" }
 fieldData: { title: { type: "string", value: "Hello" } }
 ```
 
-### Using setPluginData for API keys
-API keys should go in `localStorage`, not `pluginData`. `pluginData` is shared across all project collaborators and triggers toast warnings.
+### Using setPluginData without permission checks
+`setPluginData()` and other protected methods require a `framer.isAllowedTo()` check first. Without it, you get toast warnings. With the check, `pluginData` works cleanly for shared settings. Use `localStorage` only when you need per-user, non-shared data.
 
 ### Not handling FramerPluginClosedError
 If you have try/catch around async operations that end with `closePlugin()`, you must explicitly ignore `FramerPluginClosedError` or your error handling will catch it.
@@ -141,7 +172,7 @@ Always call `framer.isAllowedTo()` at the start of sync operations. Without it, 
 
 ## Debugging Tips
 
-- **Toast debugging**: If you see "Invoking protected message type" toasts, it's the SDK — not your code. For settings, switch to `localStorage`.
+- **Toast debugging**: If you see "Invoking protected message type" toasts, you're missing a `framer.isAllowedTo()` check before the protected method call. Add the check and the toast goes away.
 - **Invisible button text**: If button text disappears in light mode, Framer is overriding your color. Add `color: #fff !important` or use `<div role="button">`.
 - **Plugin won't load**: Check `framer.json` for valid mode names and icon paths. Icons must exist in `public/`.
 - **Sync runs but nothing appears**: Check that `fieldData` values have the `{ type, value }` wrapper. Raw values are silently ignored.

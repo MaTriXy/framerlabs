@@ -9,7 +9,7 @@ Claude Code skills that teach Claude how to build Framer components and plugins.
 | Skill | Description |
 |-------|-------------|
 | [framer-code-components-overrides](skills/framer-code-components-overrides/) | Code Components, Code Overrides, property controls, WebGL shaders, and common patterns |
-| [framer-plugins](skills/framer-plugins/) | Framer Plugin SDK — ManagedCollection API, CMS sync, plugin modes, UI patterns, permissions |
+| [framer-plugins](skills/framer-plugins/) | Framer Plugin SDK — ManagedCollection API, CMS sync, plugin modes, UI patterns, permissions, Marketplace submission |
 
 ## [Hacks](hacks/)
 
@@ -26,6 +26,8 @@ Workarounds and tricks for Framer.
 | [Auto-sized text fix](hacks/Auto-sized%20text%20fix.md) | Fix text collapse in auto-sized components |
 
 ## Changelog
+
+**2026-03-24** — Added Framer Marketplace requirements to framer-plugins skill
 
 **2026-03-11** — Added HLS video streaming pattern (dynamic HLS.js import with silent fallback, SSR guard, adaptive bitrate). New pitfall entry for pixelated .m3u8 streams in Chrome.
 

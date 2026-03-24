@@ -7,7 +7,7 @@ Claude Code skills that teach Claude how to build Framer components and plugins.
 | Skill | Description |
 |-------|-------------|
 | [framer-code-components-overrides](framer-code-components-overrides/) | Code Components, Code Overrides, property controls, WebGL shaders, and common patterns |
-| [framer-plugins](framer-plugins/) | Framer Plugin SDK — ManagedCollection API, CMS sync, plugin modes, UI patterns, permissions |
+| [framer-plugins](framer-plugins/) | Framer Plugin SDK — ManagedCollection API, CMS sync, plugin modes, UI patterns, permissions, Marketplace submission |
 
 ## Installation
 
@@ -89,6 +89,7 @@ Build, debug, and modify Framer plugins using the Plugin SDK.
 - Data storage decision tree (localStorage vs pluginData)
 - CMS sync patterns from 32 official examples
 - Common pitfalls and workarounds
+- Marketplace submission workflow, listing asset specs, mandatory requirements, and pre-submission checklist
 
 **File structure:**
 ```
@@ -97,7 +98,8 @@ framer-plugins/
 └── references/
     ├── api-reference.md
     ├── patterns.md
-    └── pitfalls.md
+    ├── pitfalls.md
+    └── marketplace.md
 ```
 
 ## License
