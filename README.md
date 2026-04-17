@@ -24,8 +24,11 @@ Workarounds and tricks for Framer.
 | [Shared state between overrides](hacks/Shared%20state%20between%20overrides.md) | Make multiple elements react to each other |
 | [Show element only once](hacks/Show%20element%20only%20once.md) | Show popups/banners only on first visit |
 | [Auto-sized text fix](hacks/Auto-sized%20text%20fix.md) | Fix text collapse in auto-sized components |
+| [Dynamic FAQ accordion](hacks/Dynamic%20FAQ%20accordion.md) | Auto-close other FAQ items when one opens, via a shared store |
 
 ## Changelog
+
+**2026-04-17** — Added Dynamic FAQ accordion hack (shared-store override that toggles `Closed`/`Opened` variants without wrapping the list in a single component).
 
 **2026-03-24** — Added Framer Marketplace requirements to framer-plugins skill
 
